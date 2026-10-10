@@ -10,9 +10,9 @@ jobs:
     if: github.event.repository.owner.id == github.event.sender.id
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MANIFEST_BRANCH: "twrp-8.1"
+      MANIFEST_BRANCH: "twrp-9.0"
       DEVICE_TREE: "https://github.com/TeamWin/android_device_samsung_gtaxlwifi"
-      DEVICE_TREE_BRANCH: "android-8.1"
+      DEVICE_TREE_BRANCH: "android-9.0"
       DEVICE_PATH: "device/samsung/gtaxlwifi"
       DEVICE_NAME: "gtaxlwifi"
       BUILD_TARGET: "recovery"
@@ -111,6 +111,6 @@ jobs:
         tag_name: T583_${{ github.run_id }}
         body: |
           Target Device: Samsung Galaxy Tab A 10.1 (SM-T583 / gtaxlwifikx)
-          Base Manifest: Omni TWRP 8.1 (Oreo Native)
-          Device Tree Branch: android-8.1
+          Base Manifest: Omni TWRP 9.0 (Oreo 8.1 Compatible)
+          Device Tree Branch: android-9.0
           MD5 (recovery.img): ${{ env.MD5_IMG }}
