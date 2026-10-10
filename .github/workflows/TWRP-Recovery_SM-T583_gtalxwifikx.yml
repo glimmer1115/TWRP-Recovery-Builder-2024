@@ -47,8 +47,7 @@ jobs:
         sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib lib32ncurses5-dev x11proto-core-dev lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev python2
         sudo add-apt-repository universe
         sudo apt -y install libncurses5
-        cd /usr/bin
-        sudo ln -sf python2 python
+        sudo ln -sf /usr/bin/python2 /usr/bin/python
 
     - name: Install OpenJDK
       uses: actions/setup-java@v4
@@ -58,14 +57,14 @@ jobs:
 
     - name: Install Git-Repo
       run: |
-        mkdir ~/bin
+        mkdir -p ~/bin
         curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         sudo ln -sf ~/bin/repo /usr/bin/repo
 
     - name: Initialize Repo & Sync
       run: |
-        mkdir workspace
+        mkdir -p workspace
         cd workspace
         git config --global user.name "builder"
         git config --global user.email "builder@github.com"
@@ -98,7 +97,7 @@ jobs:
 
     - name: Pack Odin Recovery TAR
       run: |
-        cd workspace/out/target/product/${{ env.DEVICE_NAME }}/
+        cd workspace/out/target/product/${{ env.DEVICE_NAME }}
         tar -cvf recovery.tar recovery.img
         echo "MD5_IMG=$(md5sum recovery.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
 
