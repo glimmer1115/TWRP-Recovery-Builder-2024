@@ -1,1 +1,117 @@
+name: Build TWRP for SM-T583 (gtaxlwifikx)
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build TWRP by ${{ github.actor }}
+    runs-on: ubuntu-22.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MANIFEST_BRANCH: "twrp-9.0"
+      DEVICE_TREE: "https://github.com/TeamWin/android_device_samsung_gtaxlwifi"
+      DEVICE_TREE_BRANCH: "android-8.1"
+      DEVICE_PATH: "device/samsung/gtaxlwifi"
+      DEVICE_NAME: "gtaxlwifi"
+      BUILD_TARGET: "recovery"
+    permissions:
+      contents: write
+    steps:
+    - name: Check Out
+      uses: actions/checkout@v3
+
+    - name: Display Target Environment
+      run: |
+        echo "::group::Target Device Configurations"
+        echo "Target Device: Galaxy Tab A 10.1 (SM-T583 / gtaxlwifikx)"
+        echo "Manifest Branch: ${{ env.MANIFEST_BRANCH }}"
+        echo "Device Tree: ${{ env.DEVICE_TREE }}"
+        echo "Device Branch: ${{ env.DEVICE_TREE_BRANCH }}"
+        echo "Device Path: ${{ env.DEVICE_PATH }}"
+        echo "::endgroup::"
+
+    - name: Cleanup
+      uses: rokibhasansagar/slimhub_actions@main
+
+    - name: Set Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 24
+
+    - name: Prepare the Environment
+      run: |
+        sudo apt update
+        sudo apt -y upgrade
+        sudo apt -y install gperf gcc-multilib gcc-10-multilib g++-multilib g++-10-multilib lib32ncurses5-dev x11proto-core-dev lib32z-dev libgl1-mesa-dev libxml2-utils xsltproc bc ccache lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libwxgtk3.0-gtk3-dev lzop pngcrush schedtool squashfs-tools imagemagick libbz2-dev lzma ncftp qemu-user-static libstdc++-10-dev libtinfo5 libgflags-dev python2
+        sudo add-apt-repository universe
+        sudo apt -y install libncurses5
+        cd /usr/bin
+        sudo ln -sf python2 python
+
+    - name: Install OpenJDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: zulu
+        java-version: 8
+
+    - name: Install Git-Repo
+      run: |
+        mkdir ~/bin
+        curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        sudo ln -sf ~/bin/repo /usr/bin/repo
+
+    - name: Initialize Repo & Sync
+      run: |
+        mkdir workspace
+        cd workspace
+        git config --global user.name "builder"
+        git config --global user.email "builder@github.com"
+        repo init --depth=1 -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_omni.git -b ${{ env.MANIFEST_BRANCH }}
+        repo sync -j$(nproc --all) --force-sync
+
+    - name: Clone Device Tree
+      run: |
+        cd workspace
+        git clone ${{ env.DEVICE_TREE }} -b ${{ env.DEVICE_TREE_BRANCH }} ./${{ env.DEVICE_PATH }}
+        cd ${{ env.DEVICE_PATH }}
+        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+    - name: Check Build Makefile
+      run: |
+        cd workspace
+        if [ -f ${{ env.DEVICE_PATH }}/twrp_${{ env.DEVICE_NAME }}.mk ]; then
+            echo "DEVICE_MAKEFILE=twrp_${{ env.DEVICE_NAME }}" >> $GITHUB_ENV
+        elif [ -f ${{ env.DEVICE_PATH }}/omni_${{ env.DEVICE_NAME }}.mk ]; then
+            echo "DEVICE_MAKEFILE=omni_${{ env.DEVICE_NAME }}" >> $GITHUB_ENV
+        fi
+
+    - name: Building Recovery Image
+      run: |
+        cd workspace
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        lunch ${{ env.DEVICE_MAKEFILE }}-eng && make clean && make ${{ env.BUILD_TARGET }}image -j$(nproc --all)
+        echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+
+    - name: Pack Odin Recovery TAR
+      run: |
+        cd workspace/out/target/product/${{ env.DEVICE_NAME }}/
+        tar -cvf recovery.tar recovery.img
+        echo "MD5_IMG=$(md5sum recovery.img | cut -d ' ' -f 1)" >> $GITHUB_ENV
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          workspace/out/target/product/${{ env.DEVICE_NAME }}/recovery.tar
+          workspace/out/target/product/${{ env.DEVICE_NAME }}/recovery.img
+        name: TWRP Unofficial for SM-T583 (gtaxl) // ${{ env.BUILD_DATE }}
+        tag_name: T583_${{ github.run_id }}
+        body: |
+          Target Device: Samsung Galaxy Tab A 10.1 (SM-T583 / gtaxlwifikx)
+          Base Manifest: Omni TWRP 9.0 (Oreo 8.1 Compatible)
+          Device Tree Branch: android-8.1
+          MD5 (recovery.img): ${{ env.MD5_IMG }}
