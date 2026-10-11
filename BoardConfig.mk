@@ -5,20 +5,20 @@ TARGET_CPU_ABI := armeabi-v7a
 TARGET_CPU_VARIANT := generic
 
 # Bootloader
-BOARD_KERNEL_CMDLINE := console=ttyMSM0,115200n8 androidboot.boottime=0 androidboot.hardware=gtaxldwifikx
+BOARD_KERNEL_CMDLINE := console=ttyMSM0,115200n8 androidboot.boottime=0 androidboot.hardware=gtaxldwifikx androidboot.selinux=permissive
 
 # Kernel
-BOARD_KERNEL_BASE := 0x80008000
+BOARD_KERNEL_BASE := 0x10000000
 BOARD_KERNEL_PAGESIZE := 2048
 BOARD_KERNEL_TAGS_OFFSET := 0x00000100
 
 # Ramdisk
-BOARD_RAMDISK_OFFSET := 0x00008000
+BOARD_RAMDISK_OFFSET := 0x01000000
 BOARD_RAMDISK_SIZE := 32*1024*1024
 
 # Boot Image
 BOARD_BOOTIMAGE_SIZE := 32*1024*1024
-BOARD_MKBOOTIMG_ARGS := --kernel_offset 0x00008000 --ramdisk_offset 0x01000000 --tags_offset 0x00000100
+BOARD_MKBOOTIMG_ARGS := --base 0x10000000 --kernel_offset 0x00008000 --ramdisk_offset 0x01000000 --tags_offset 0x00000100 --pagesize 2048
 
 # Device Specifics
 BOARD_USES_NAND := false
